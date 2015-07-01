@@ -8,20 +8,14 @@
 #include <cmath>
 #include "util.h"
 
-namespace activation 
+namespace activation
 {
-
     struct function
     {
         virtual const ::range range() const = 0;
         virtual f64 f(const f64) const = 0;
         virtual f64 df(const f64) const = 0;
         virtual f64 f(const vec_f &, size_t) const = 0;
-        virtual vec_f df(const vec_f &y, size_t index) const {
-            vec_f v(y.size(), 0);
-            v[index] = df(y[index]);
-            return v;
-        };
     };
 
     struct identity : public function
@@ -82,6 +76,8 @@ namespace activation
             return ::range{-1.0, 1.0};
         };
     };
+
+    using _default = identity;
 };
 
 #endif //ML_ACTIVATION_FUNCTIONS_H

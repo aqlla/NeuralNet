@@ -12,29 +12,49 @@
 
 class NeuralNet
 {
+private:
+    std::vector<unique_ptr<LayerBase>> layers;
+    std::vector<f64*> inputs;
+
 public:
-    NeuralNet() = default;
+    NeuralNet()
+        : inputs{
+            (f64 *) calloc(sizeof(f64), 1),
+            (f64 *) calloc(sizeof(f64), 1)} {};
     ~NeuralNet() = default;
 
-    void addLayer(size_t numberOfNeurons) {
-        for (int i = 0; i < numberOfNeurons; ++i)
-            inputs.emplace_back(new double);
-        std::unique_ptr<InputLayer<>> l{new InputLayer<>(numberOfNeurons, inputs)};
-        layers.push_back(std::move(l));
-    }
-
-    void update(std::vector<f64> in) {
-        for (int i = 0; i < in.size(); ++i) {
-            *inputs[i] = in[i];
-            layers[0].get()->neurons[i]->setOutput();
-        }
+    template <size_t NeuronCount>
+    void addInputLayer() {
+        auto layer = make_unique<InputLayer<NeuronCount>>(inputs);
+        layers.push_back(std::move(layer));
     };
 
-private:
-    std::vector<std::unique_ptr<_BaseLayer>> layers;
-    std::vector<f64*> inputs;
+    template <size_t NeuronCount, class ActivationFunction>
+    void addHiddenLayer() {
+        auto layer = make_unique<FullyConnectedLayer<NeuronCount, ActivationFunction>>(layers[layers.size()-1].get());
+        layers.push_back(std::move(layer));
+    };
+
+    void update(std::vector<f64> &&values) {
+        for (int i = 0; i < inputs.size(); ++i)
+            *inputs[i] = values[i];
+        for (auto &layer : layers)
+            layer->forward();
+    };
 };
 
+
+template <size_t NeuronCount>
+NeuralNet &operator <<(NeuralNet &net, InputLayer<NeuronCount>  const& layer) {
+    net.addInputLayer<NeuronCount>();
+    return net;
+};
+
+template <size_t NeuronCount, class ActivationFunction>
+NeuralNet &operator <<(NeuralNet &net, FullyConnectedLayer<NeuronCount, ActivationFunction>  const& layer) {
+    net.addHiddenLayer<NeuronCount, ActivationFunction>();
+    return net;
+};
 
 
 #endif //ML_NEURALNET_H

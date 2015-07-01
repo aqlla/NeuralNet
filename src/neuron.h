@@ -7,23 +7,18 @@
 
 #include <iostream>
 
-struct Synapse {
-    explicit Synapse() : weight(Synapse::randomWeight()) {
-        set(0);
-    };
-
-    Synapse(f64 *input, f64 weight) : weight(weight) {
-        this->input = input;
-        set(*input);
-    };
+struct Synapse
+{
+    Synapse(f64 *input)
+            : weight{randomWeight()},
+              input{input} {};
 
     f64 *input;
-    f64 output;
     f64 weight;
     f64 deltaWeight;
 
-    void set(const f64 value) {
-        output = weight * value;
+    f64 get() const {
+        return *input * weight;
     };
 
     static f64 randomWeight() {
@@ -32,69 +27,61 @@ struct Synapse {
 };
 
 
-class BaseNeuron
-{
+class NeuronBase {
 public:
-    BaseNeuron() = default;
-    virtual ~BaseNeuron() = default;
-
-    f64 sumInputs() {
-        inputTotal = 0;
-        for (auto in : inputs)
-            inputTotal += *in;
-        return inputTotal;
-    };
-
-    void addInput(f64 *input) {
-        inputs.push_back(input);
-    };
-
+    virtual f64 sumInputs() = 0;
+    virtual void addInput(f64 *) = 0;
     virtual void setOutput() = 0;
-
-protected:
-    f64 inputTotal;
-    std::vector<f64*> inputs;
-    std::vector<Synapse> outputs;
+    virtual std::string to_string() const = 0;
+    f64 output;
 };
 
 
 template <class ActivationFunc>
-class Neuron : virtual public BaseNeuron
-{
-private:
-    ActivationFunc activationFunc;
-
+class Neuron : public NeuronBase {
 public:
-    Neuron() {
-//        std::cout << "neuron ctor called" << std::endl;
+    f64 sumInputs() {
+        inputTotal = 0;
+        for (auto &in : inputs)
+            inputTotal += in.get();
+        return inputTotal;
     };
-//    ~Neuron() = default;
 
+    void addInput(f64 *in) {
+        inputs.push_back(Synapse{in});
+    };
 
-    virtual void setOutput() override {
+    void setOutput() {
         sumInputs();
-        std::cout << "input sum: " << inputTotal << std::endl;
-        std::cout << "f("<< inputTotal << "): " << activationFunc.f(inputTotal) << std::endl;
-
-        activationFunc.f(inputTotal);
-
-        for (auto &output : outputs)
-            output.set(inputTotal);
+        output = activationFunc.f(inputTotal);
     };
 
     std::string to_string() const {
         std::stringstream ss;
-        ss << "Input Total: " << inputTotal << std::endl
-            << "Inputs: " << std::endl;
 
-        for (auto in : inputs) {
-            ss << "Weight: " << in->weight << std::endl
-            << "Signal: " << in->output << std::endl;
+        for (int i = 0; i < inputs.size(); ++i) {
+            ss << "Synapse " << i << " info:" << std::endl
+            << "\tsignal: " << inputs[i].get() << std::endl
+            << "\tweight: " << inputs[i].weight << std::endl;
         }
+
+        ss << "Input Total: " << inputTotal << std::endl
+           << "f(" << inputTotal << ")  = " << activationFunc.f(inputTotal) << std::endl
+           << "df(" << inputTotal << ") = " << activationFunc.df(inputTotal) << std::endl;
 
         return ss.str();
     };
+
+protected:
+    f64 inputTotal;
+    std::vector<Synapse> inputs;
+    ActivationFunc activationFunc;
 };
+
+
+inline std::ostream &operator <<(std::ostream &out, const NeuronBase &n) {
+    return out << (n.to_string());
+}
 
 
 #endif //ML_NEURON_H

@@ -9,12 +9,13 @@ int main() {
 
     NeuralNet net;
 
-    net << InputLayer<1>{}
-        << FullyConnectedLayer<4, activation::sigmoid>{}
-        << FullyConnectedLayer<2, activation::tanh>{};
+    net << InputLayer<5>{}
+        << FullyConnectedLayer<150, activation::sigmoid>{}
+        << FullyConnectedLayer<150, activation::sigmoid>{}
+        << FullyConnectedLayer<150, activation::sigmoid>{};
 
-    net.update({.7, .243});
-    net.update({.4, .6});
+    net.update({.7, .9, .2, .9, .2});
+    net.update({.6, .9, .23, .2, .1});
 
     return 0;
 }

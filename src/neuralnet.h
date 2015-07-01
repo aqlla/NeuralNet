@@ -7,35 +7,40 @@
 
 #include "itlib.h"
 #include <iostream>
+#include <assert.h>
 #include "layer.h"
 #include "cost_functions.h"
 
 class NeuralNet
 {
 private:
-    std::vector<unique_ptr<LayerBase>> layers;
-    std::vector<f64*> inputs;
+    std::vector<shared_ptr<LayerBase>> layers;
+    std::vector<shared_ptr<f64>> inputs;
+    size_t inputNeuronCount;
 
 public:
     NeuralNet()
-        : inputs{
-            (f64 *) calloc(sizeof(f64), 1),
-            (f64 *) calloc(sizeof(f64), 1)} {};
+            : inputNeuronCount{0} {};
     ~NeuralNet() = default;
 
     template <size_t NeuronCount>
     void addInputLayer() {
-        auto layer = make_unique<InputLayer<NeuronCount>>(inputs);
+        inputNeuronCount = NeuronCount;
+        for (size_t i = 0; i < NeuronCount; ++i)
+            inputs.push_back(make_shared<f64>(0));
+        auto layer = make_shared<InputLayer<NeuronCount>>(inputs);
         layers.push_back(std::move(layer));
     };
 
-    template <size_t NeuronCount, class ActivationFunction>
+    template <size_t NeuronCount, class ActivationFunc>
     void addHiddenLayer() {
-        auto layer = make_unique<FullyConnectedLayer<NeuronCount, ActivationFunction>>(layers[layers.size()-1].get());
+        auto previousLayer = layers[layers.size()-1];
+        auto layer = make_shared<FullyConnectedLayer<NeuronCount, ActivationFunc>>(previousLayer);
         layers.push_back(std::move(layer));
     };
 
-    void update(std::vector<f64> &&values) {
+    void update(vector<f64> &&values) {
+        assert(values.size() == inputNeuronCount);
         for (int i = 0; i < inputs.size(); ++i)
             *inputs[i] = values[i];
         for (auto &layer : layers)
@@ -50,9 +55,9 @@ NeuralNet &operator <<(NeuralNet &net, InputLayer<NeuronCount>  const& layer) {
     return net;
 };
 
-template <size_t NeuronCount, class ActivationFunction>
-NeuralNet &operator <<(NeuralNet &net, FullyConnectedLayer<NeuronCount, ActivationFunction>  const& layer) {
-    net.addHiddenLayer<NeuronCount, ActivationFunction>();
+template <size_t NeuronCount, class ActivationFunc>
+NeuralNet &operator <<(NeuralNet &net, FullyConnectedLayer<NeuronCount, ActivationFunc>  const& layer) {
+    net.addHiddenLayer<NeuronCount, ActivationFunc>();
     return net;
 };
 

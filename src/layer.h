@@ -10,10 +10,6 @@
 #include "neuron.h"
 
 
-using std::make_unique;
-using std::vector;
-
-
 class LayerBase {
 public:
     LayerBase() = default;
@@ -22,61 +18,60 @@ public:
     LayerBase(LayerBase &&other)
             : neurons{std::move(other.neurons)},
               neuronCount{other.neuronCount},
-              prev{other.prev} {};
+              prev{std::move(other.prev)} {};
 
     LayerBase(size_t neuronCount)
             : neuronCount{neuronCount},
               prev{nullptr} {};
 
-    LayerBase(size_t neuronCount, LayerBase *prev)
+    LayerBase(size_t neuronCount, shared_ptr<LayerBase> prev)
             : neuronCount{neuronCount},
               prev{nullptr} {};
 
 
     // Explicitly delete copy ctor/assignment op to protect unique_ptr
     LayerBase(LayerBase const &) = delete;
-    LayerBase&operator =(LayerBase const &) = delete;
+    LayerBase &operator =(LayerBase const &) = delete;
 
     LayerBase &operator =(LayerBase &&other) {
         if (this != &other) {
             neurons = std::move(other.neurons);
             neuronCount = other.neuronCount;
-            prev = other.prev;
+            prev = std::move(other.prev);
         }
 
         return *this;
     };
 
-    virtual f64 *getOutputPtrAtIndex(size_t index) const = 0;
+    virtual shared_ptr<f64> getOutputPtr(size_t index) const = 0;
     virtual void forward() = 0;
-
     size_t neuronCount;
 
 protected:
-    LayerBase *prev;
-    std::vector<unique_ptr<NeuronBase>> neurons;
+    shared_ptr<LayerBase> prev;
+    vector<unique_ptr<NeuronBase>> neurons;
 };
 
 
-template <size_t NeuronCount, class ActivationFunc = activation::_default>
+template <size_t NeuronCount, class ActivationFunc>
 class FullyConnectedLayer : public LayerBase
 {
 public:
     FullyConnectedLayer() = default;
 
-    FullyConnectedLayer(LayerBase *prev)
+    FullyConnectedLayer(shared_ptr<LayerBase> prev)
             : LayerBase{NeuronCount, prev}
     {
         for (int i = 0; i < NeuronCount; ++i) {
             auto neuron = make_unique<Neuron<ActivationFunc>>();
             for (size_t j = 0; j < prev->neuronCount; ++j)
-                neuron->addInput(prev->getOutputPtrAtIndex(j));
+                neuron->addInput(prev->getOutputPtr(j));
             neurons.push_back(std::move(neuron));
         }
     };
 
-    f64 *getOutputPtrAtIndex(size_t index) const {
-        return &neurons[index]->output;
+    shared_ptr<f64> getOutputPtr(size_t index) const {
+        return neurons[index]->output;
     };
 
     void forward() override {
@@ -92,24 +87,22 @@ template <size_t NeuronCount, class ActivationFunc = activation::identity>
 class InputLayer : public LayerBase
 {
 protected:
-    std::vector<f64*> inputs;
+    vector<shared_ptr<f64>> inputs;
 
 public:
     InputLayer() = default;
 
-    InputLayer(std::vector<f64*> &inputs)
+    InputLayer(vector<shared_ptr<f64>> &inputs)
             : LayerBase{NeuronCount},
               inputs{inputs} {};
 
-    f64 *getOutputPtrAtIndex(size_t index) const override {
+    shared_ptr<f64> getOutputPtr(size_t index) const override {
         return inputs[index];
     };
 
     void forward() override {
-        int i = 0;
-        for (auto &n : inputs) {
-            std::cout << "Input " << i++ << ": " << *n << std::endl;
-        }
+        for (auto &in : inputs)
+            std::cout << "input: " << *in << std::endl;
     };
 };
 

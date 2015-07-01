@@ -6,14 +6,16 @@
 #define ML_NEURON_H
 
 #include <iostream>
+#include "util.h"
+#include "neuralnet.h"
 
 struct Synapse
 {
-    Synapse(f64 *input)
+    Synapse(shared_ptr<f64> input)
             : weight{randomWeight()},
               input{input} {};
 
-    f64 *input;
+    shared_ptr<f64> input;
     f64 weight;
     f64 deltaWeight;
 
@@ -29,11 +31,14 @@ struct Synapse
 
 class NeuronBase {
 public:
+    NeuronBase()
+            : output{make_unique<f64>(0)} {};
+
     virtual f64 sumInputs() = 0;
-    virtual void addInput(f64 *) = 0;
+    virtual void addInput(shared_ptr<f64>) = 0;
     virtual void setOutput() = 0;
     virtual std::string to_string() const = 0;
-    f64 output;
+    shared_ptr<f64> output;
 };
 
 
@@ -47,13 +52,13 @@ public:
         return inputTotal;
     };
 
-    void addInput(f64 *in) {
+    void addInput(shared_ptr<f64> in) {
         inputs.push_back(Synapse{in});
     };
 
     void setOutput() {
         sumInputs();
-        output = activationFunc.f(inputTotal);
+        *output = activationFunc.f(inputTotal);
     };
 
     std::string to_string() const {
@@ -61,8 +66,9 @@ public:
 
         for (int i = 0; i < inputs.size(); ++i) {
             ss << "Synapse " << i << " info:" << std::endl
-            << "\tsignal: " << inputs[i].get() << std::endl
-            << "\tweight: " << inputs[i].weight << std::endl;
+               << "\tinput:  " << *inputs[i].input << std::endl
+               << "\tweight: " << inputs[i].weight << std::endl
+               << "\tsignal: " << inputs[i].get() << std::endl;
         }
 
         ss << "Input Total: " << inputTotal << std::endl
@@ -74,7 +80,7 @@ public:
 
 protected:
     f64 inputTotal;
-    std::vector<Synapse> inputs;
+    vector<Synapse> inputs;
     ActivationFunc activationFunc;
 };
 

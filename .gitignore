@@ -1,5 +1,9 @@
 # Created by https://www.gitignore.io
 
+build*/
+*.kdev4
+*~
+
 ### OSX ###
 .DS_Store
 .AppleDouble

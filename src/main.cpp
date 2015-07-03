@@ -1,24 +1,14 @@
+
 #include <iostream>
-#include "util.h"
 #include "neuralnet.h"
 
 
 
 int main() {
-    srand(static_cast<unsigned>(time(0)));
-
     NeuralNet net;
+    net << InputLayer{2}
+        << FullyConnectedLayer<activation::sigmoid>{3};
+    net.forward(.7, .44);
 
-    net << InputLayer<5>{}
-        << FullyConnectedLayer<150, activation::sigmoid>{}
-        << FullyConnectedLayer<150, activation::sigmoid>{}
-        << FullyConnectedLayer<150, activation::sigmoid>{};
-
-    net.update({.7, .9, .2, .9, .2});
-    net.update({.6, .9, .23, .2, .1});
-
-    return 0;
+    return EXIT_SUCCESS;
 }
-
-
-

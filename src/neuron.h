@@ -9,8 +9,7 @@
 #include "util.h"
 #include "neuralnet.h"
 
-struct Synapse
-{
+struct Synapse {
     Synapse(shared_ptr<f64> input)
             : weight{randomWeight()},
               input{input} {};
@@ -45,26 +44,26 @@ public:
 template <class ActivationFunc>
 class Neuron : public NeuronBase {
 public:
-    f64 sumInputs() {
+    f64 sumInputs() override {
         inputTotal = 0;
         for (auto &in : inputs)
             inputTotal += in.get();
         return inputTotal;
     };
 
-    void addInput(shared_ptr<f64> in) {
+    void addInput(shared_ptr<f64> in) override {
         inputs.push_back(Synapse{in});
     };
 
-    void setOutput() {
+    void setOutput() override {
         sumInputs();
         *output = activationFunc.f(inputTotal);
     };
 
-    std::string to_string() const {
+    std::string to_string() const override {
         std::stringstream ss;
 
-        for (int i = 0; i < inputs.size(); ++i) {
+        for (size_t i = 0; i < inputs.size(); ++i) {
             ss << "Synapse " << i << " info:" << std::endl
                << "\tinput:  " << *inputs[i].input << std::endl
                << "\tweight: " << inputs[i].weight << std::endl

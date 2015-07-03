@@ -210,7 +210,7 @@ namespace it {
 
     template<typename T>
     vec3<T> vec3<T>::operator/(const T rhs) const {
-        return vec3<T>(x / (double) rhs, y / (double) rhs, z / (double) rhs);
+        return vec3<T>(x / double(rhs), y / double(rhs), z / double(rhs));
     };
 
 

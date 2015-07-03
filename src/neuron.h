@@ -64,7 +64,7 @@ public:
         std::stringstream ss;
 
         for (size_t i = 0; i < inputs.size(); ++i) {
-            ss << "Synapse " << i << " info:" << std::endl
+            ss << "Synapse " << i << ":" << std::endl
                << "\tinput:  " << *inputs[i].input << std::endl
                << "\tweight: " << inputs[i].weight << std::endl
                << "\tsignal: " << inputs[i].get() << std::endl;

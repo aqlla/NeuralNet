@@ -9,20 +9,30 @@
 #include "util.h"
 #include "neuralnet.h"
 
+class NeuronBase;
+
+template <class ActivationFunc>
+class Neuron;
+
 struct Synapse {
     Synapse(shared_ptr<f64> input)
             : weight{randomWeight()},
+              input{input} {};
+
+    Synapse(shared_ptr<f64> input, f64 weight)
+            : weight{weight},
               input{input} {};
 
     shared_ptr<f64> input;
     f64 weight;
     f64 deltaWeight;
 
-    f64 get() const {
-        return *input * weight;
+    auto get() const -> const f64 {
+        return *(input) * weight;
     };
 
-    static f64 randomWeight() {
+    static constexpr f64 INPUT_WEIGHT = 1.0;
+    static auto randomWeight() -> const f64 {
         return static_cast<f64>(rand()) / static_cast<f64>(RAND_MAX);
     };
 };
@@ -31,46 +41,62 @@ struct Synapse {
 class NeuronBase {
 public:
     NeuronBase()
-            : output{make_unique<f64>(0)} {};
+            : output{ make_unique<f64>(0) } {};
 
-    virtual f64 sumInputs() = 0;
-    virtual void addInput(shared_ptr<f64>) = 0;
-    virtual void setOutput() = 0;
-    virtual std::string to_string() const = 0;
-    shared_ptr<f64> output;
-};
-
-
-template <class ActivationFunc>
-class Neuron : public NeuronBase {
-public:
-    f64 sumInputs() override {
+    virtual auto sumInputs() -> const f64 {
         inputTotal = 0;
         for (auto &in : inputs)
             inputTotal += in.get();
         return inputTotal;
     };
 
-    void addInput(shared_ptr<f64> in) override {
+    virtual auto addInput(shared_ptr<f64> in) -> NeuronBase& {
         inputs.push_back(Synapse{in});
+        return *this;
     };
 
-    void setOutput() override {
-        sumInputs();
-        *output = activationFunc.f(inputTotal);
+    virtual auto addInput(shared_ptr<f64> in, f64 weight) -> NeuronBase& {
+        inputs.push_back(Synapse{in, weight});
+        return *this;
     };
 
-    std::string to_string() const override {
+    virtual auto setOutput() -> NeuronBase& {
+        return *this;
+    };
+
+    virtual auto to_string() const -> const std::string {
         std::stringstream ss;
 
         for (size_t i = 0; i < inputs.size(); ++i) {
             ss << "Synapse " << i << ":" << std::endl
-               << "\tinput:  " << *inputs[i].input << std::endl
-               << "\tweight: " << inputs[i].weight << std::endl
-               << "\tsignal: " << inputs[i].get() << std::endl;
+            << "\tinput:  " << *(inputs[i].input) << std::endl
+            << "\tweight: " << inputs[i].weight   << std::endl
+            << "\tsignal: " << inputs[i].get()    << std::endl;
         }
 
-        ss << "Input Total: " << inputTotal << std::endl
+        return ss.str();
+    };
+
+    shared_ptr<f64> output;
+
+protected:
+    f64 inputTotal;
+    vector<Synapse> inputs;
+};
+
+
+template <class ActivationFunc>
+class Neuron : public NeuronBase {
+public:
+    auto setOutput() -> NeuronBase& override {
+        *output = activationFunc.f(sumInputs());
+        return *this;
+    };
+
+    auto to_string() const -> const std::string override {
+        std::stringstream ss;
+        ss << NeuronBase::to_string()
+           << "Input Total: " << inputTotal << std::endl
            << "f(" << inputTotal << ")  = " << activationFunc.f(inputTotal) << std::endl
            << "df(" << inputTotal << ") = " << activationFunc.df(inputTotal) << std::endl;
 
@@ -78,13 +104,11 @@ public:
     };
 
 protected:
-    f64 inputTotal;
-    vector<Synapse> inputs;
     ActivationFunc activationFunc;
 };
 
 
-inline std::ostream &operator <<(std::ostream &out, const NeuronBase &n) {
+inline auto operator <<(std::ostream &out, const NeuronBase &n) -> std::ostream& {
     return out << (n.to_string());
 }
 

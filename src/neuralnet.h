@@ -37,7 +37,7 @@ public:
     ~NeuralNet() = default;
 
 
-    NeuralNet<CostFunc>& setInputLayer(size_t neuronCount) {
+    auto setInputLayer(const size_t neuronCount) -> NeuralNet<CostFunc>& {
         if (inputCount == 0)
             inputCount = neuronCount;
         for (size_t i = 0; i < neuronCount; ++i)
@@ -48,34 +48,31 @@ public:
     };
 
     template <class ActivationFunc>
-    NeuralNet<CostFunc>& addHiddenLayer(size_t neuronCount) {
-        auto previousLayer = layers[layers.size()-1];
-        auto layer = make_shared<FullyConnectedLayer<ActivationFunc>>(neuronCount, previousLayer);
+    auto addHiddenLayer(const size_t neuronCount) -> NeuralNet<CostFunc>& {
+        auto layer = make_shared<FullyConnectedLayer<ActivationFunc>>(neuronCount, layers.back());
         layers.push_back(std::move(layer));
         return *this;
     };
 
     template <class ActivationFunc>
-    NeuralNet<CostFunc>& setOutputLayer(size_t neuronCount) {
+    auto setOutputLayer(const size_t neuronCount) -> NeuralNet<CostFunc>& {
         if (outputCount == 0)
             outputCount = neuronCount;
-
-        auto previousLayer = layers[layers.size()-1];
-        auto layer = make_shared<OutputLayer<ActivationFunc>>(outputCount, previousLayer);
+        auto layer = make_shared<OutputLayer<ActivationFunc>>(outputCount, layers.back());
         layers.push_back(std::move(layer));
         return *this;
     };
 
 
     template <class T>
-    NeuralNet<CostFunc>& forward(T t) {
+    auto forward(const T t) -> NeuralNet<CostFunc>& {
         *inputs[inputIndex++] = t;
         propagate();
         return *this;
     };
 
     template <class T, class... Args>
-    NeuralNet<CostFunc> & forward(T t, Args... args) {
+    auto forward(const T t, const Args... args) -> NeuralNet<CostFunc>& {
         static constexpr int argc = sizeof...(Args) + 1;
         if (inputIndex == 0) assert(argc == inputCount);
 
@@ -83,7 +80,7 @@ public:
         return forward(args...);
     };
 
-    NeuralNet<CostFunc>& forward(vector<f64> &values) {
+    auto forward(const vector<f64> &values) -> NeuralNet<CostFunc>& {
         assert(values.size() == inputCount);
         for (size_t i = 0; i < inputs.size(); ++i)
             *inputs[i] = values[i];
@@ -91,38 +88,37 @@ public:
         return *this;
     };
 
-    void propagate() {
-        for (auto &layer : layers) {
+    auto propagate() -> NeuralNet<CostFunc>& {
+        for (auto &layer : layers)
             layer->forward();
-        }
+        return *this;
     };
 
-    void getCost(vector<f64> expected) {
-        auto outputLayer = layers[layers.size() - 1];
-        auto output = outputLayer->outputs;
-        for (size_t i = 0; i < output.size(); ++i) {
+    auto getCost(const vector<f64> expected) -> NeuralNet<CostFunc>& {
+        auto outLayer = layers.back();
+        for (size_t i = 0; i < outLayer->size(); ++i) {
             std::cout << "Cost " << i << ": "
-                      << this->costFunction.f(*output[i], expected[i])
+                      << costFunction.f((*outLayer)[i], expected[i])
                       << std::endl;
         }
-
         std::cout << std::endl;
-    }
+        return *this;
+    };
 };
 
 template <class CostFunc>
-NeuralNet<CostFunc> &operator <<(NeuralNet<CostFunc> &net, InputLayer const& layer) {
-    return net.setInputLayer(layer.neuronCount);
+auto operator <<(NeuralNet<CostFunc> &net, InputLayer const& layer) -> NeuralNet<CostFunc>& {
+    return net.setInputLayer(layer.size());
 };
 
 template <class CostFunc, class ActivationFunc>
-NeuralNet<CostFunc> &operator <<(NeuralNet<CostFunc> &net, FullyConnectedLayer<ActivationFunc> const& layer) {
-    return net.template addHiddenLayer<ActivationFunc>(layer.neuronCount);
+auto operator <<(NeuralNet<CostFunc> &net, FullyConnectedLayer<ActivationFunc> const& layer) -> NeuralNet<CostFunc>& {
+    return net.template addHiddenLayer<ActivationFunc>(layer.size());
 };
 
 template <class CostFunc, class ActivationFunc>
-NeuralNet<CostFunc> &operator <<(NeuralNet<CostFunc> &net, OutputLayer<ActivationFunc> const& layer) {
-    return net.template setOutputLayer<ActivationFunc>(layer.neuronCount);
+auto operator <<(NeuralNet<CostFunc> &net, OutputLayer<ActivationFunc> const& layer) -> NeuralNet<CostFunc>& {
+    return net.template setOutputLayer<ActivationFunc>(layer.size());
 };
 
 

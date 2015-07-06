@@ -15,17 +15,12 @@ namespace activation
         virtual const ::range range() const = 0;
         virtual f64 f(const f64) const = 0;
         virtual f64 df(const f64) const = 0;
-        virtual f64 f(const vec_f &, size_t) const = 0;
     };
 
     struct identity : public function
     {
         f64 f(const f64 value) const override {
             return value;
-        };
-
-        f64 f(const vec_f &v, size_t index) const override {
-            return v[index];
         };
 
         f64 df(const f64 y) const override {
@@ -44,12 +39,8 @@ namespace activation
             return 1.0 / (1.0 + std::exp(-value));
         };
 
-        f64 f(const vec_f &v, size_t index) const override {
-            return 1.0 / (1.0 + std::exp(-v[index]));
-        };
-
         f64 df(const f64 y) const override {
-            return y * (1.0 - y);
+            return f(y) * (1.0 - f(y));
         };
 
         const ::range range() const {
@@ -62,10 +53,6 @@ namespace activation
     {
         f64 f(const f64 value) const override {
             return std::tanh(value);
-        };
-
-        f64 f(const vec_f &v, size_t index) const override {
-            return std::tanh(v[index]);
         };
 
         f64 df(const f64 y) const override {

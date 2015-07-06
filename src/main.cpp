@@ -1,8 +1,6 @@
 
 #include <iostream>
-#include "neuralnet.h"
-
-
+#include "neuralnet.hpp"
 
 int main() {
     vector<vector<f64>> inputs {
@@ -17,12 +15,15 @@ int main() {
             {93},
     };
 
+    vector<f64> e2 { 75, 82, 93 };
+
+
     vector<vector<vector<f64>>> trainingData{inputs, expected};
 
-    NeuralNet<mse> net;
+    NeuralNet<cost::mse> net;
     net << InputLayer{2}
         << FullyConnectedLayer<activation::sigmoid>{2}
-        << OutputLayer<activation::identity>{1};
+        << OutputLayer<activation::sigmoid>{1};
 
     for (size_t i = 0; i < inputs.size(); ++i) {
         net.forward(inputs[i])

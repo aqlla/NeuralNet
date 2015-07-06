@@ -5,6 +5,11 @@
 #ifndef ML_UTILITY_H
 #define ML_UTILITY_H
 
+#define NN_DBG_ALL      0
+#define NN_DBG_OUTPUT   1
+#define NN_DBG_COST     2
+#define NN_DEBUG NN_DBG_COST
+
 #include <vector>
 #include <sstream>
 #include <iostream>
@@ -33,7 +38,6 @@ namespace it {
 
     }
 }
-
 
 using std::vector;
 using std::make_unique;

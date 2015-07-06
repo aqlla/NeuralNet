@@ -1,15 +1,16 @@
 // Created by Aquilla Sherrock on 6/25/15.
 // Copyright (c) 2015 Insignificant Tech. All rights reserved.
 
-
 #ifndef ML_NEURALNET_H
 #define ML_NEURALNET_H
 
-#include "itlib.h"
 #include <iostream>
 #include <assert.h>
-#include "layer.h"
-#include "cost_functions.h"
+#include <functional>
+
+#include "layer.hpp"
+#include "connected_layer.hpp"
+#include "cost_functions.hpp"
 
 template <class CostFunc>
 class NeuralNet
@@ -35,7 +36,6 @@ public:
     };
 
     ~NeuralNet() = default;
-
 
     auto setInputLayer(const size_t neuronCount) -> NeuralNet<CostFunc>& {
         if (inputCount == 0)
@@ -94,17 +94,30 @@ public:
         return *this;
     };
 
-    auto getCost(const vector<f64> expected) -> NeuralNet<CostFunc>& {
+    auto getCost(const vector<f64> desiredOutput) -> NeuralNet<CostFunc>& {
         auto outLayer = layers.back();
         for (size_t i = 0; i < outLayer->size(); ++i) {
-            std::cout << "Cost " << i << ": "
-                      << costFunction.f((*outLayer)[i], expected[i])
+            f64 desired = normalizeOutput(desiredOutput[i], 0, 100);
+            f64 cost = costFunction.f((*outLayer)[i], desired);
+
+            std::cout << "Output " << i << ": \n"
+                      << "\tExpected: " << desired << std::endl
+                      << "\tResult:   " << (*outLayer)[i] << std::endl
+                      << "\tCost:     " << cost << std::endl
+                      << "\tLocal G:  " << (*outLayer).neurons[i]->calculateGrad(desired)
                       << std::endl;
         }
         std::cout << std::endl;
         return *this;
     };
+
+    auto normalizeOutput(f64 x, f64 in_min, f64 in_max) -> f64 {
+        return (x - in_min) / (in_max - in_min);
+    };
 };
+
+
+
 
 template <class CostFunc>
 auto operator <<(NeuralNet<CostFunc> &net, InputLayer const& layer) -> NeuralNet<CostFunc>& {
